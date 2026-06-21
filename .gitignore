@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pyc
+
+# Virtual Environment
+env_cv/
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Machine Learning Models
+*.pth
+*.pt
+*.h5
+*.model
+*.pkl
+*.pickle
+
+# Data files
+data/
+*.npy
+*.npz
+*.csv
+*.xlsx
+
+# YOLO runs and outputs
+runs/
+*.yaml
+!data.yaml
+!README.md
+
+# Temporary files
+*.tmp
+*.temp
+tempCodeRunnerFile.py
+.cache/
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+
+# Misc
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+dist/
+build/

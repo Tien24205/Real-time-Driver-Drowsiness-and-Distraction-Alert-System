@@ -1,0 +1,12 @@
+path: E:/Project2026/Dataset/Distract # Đường dẫn gốc của tập Distract
+train: train/images
+val: valid/images
+test: test/images
+
+# Định nghĩa các lớp (classes) của em. 
+# Hãy mở thử 1 file .txt trong folder labels ra xem số đầu tiên là gì (0, 1 hay 2)
+# Dưới đây là ví dụ chuẩn, hãy sửa tên nhãn (names) trùng với các class trong dataset của em:
+names:
+  0: phone
+  1: drink
+  2: normal

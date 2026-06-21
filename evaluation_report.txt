@@ -1,0 +1,22 @@
+============================================================
+   EVALUATION REPORT — Drowsiness Detection LSTM
+   Generated: 2026-06-17 20:22:42
+   Model: E:\Project2026\Real-time Driver Drowsiness and Distraction Alert System\models\best_multitask_lstm.pth
+============================================================
+
+Total samples  : 43090
+Accuracy       : 82.95%
+
+Metric                  Alert (0)   Drowsy (1)    Macro Avg
+------------------------------------------------------------
+Precision                 83.55%      82.48%      83.01%
+Recall                    79.06%      86.36%      82.71%
+F1                        81.24%      84.37%      82.81%
+------------------------------------------------------------
+
+Confusion Matrix:
+  True\Pred  Alert    Drowsy
+  Alert      15910     4213
+  Drowsy      3133    19834
+
+Images saved: E:\Project2026\Real-time Driver Drowsiness and Distraction Alert System\confusion_matrix.png
