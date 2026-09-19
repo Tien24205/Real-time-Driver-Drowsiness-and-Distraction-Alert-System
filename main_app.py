@@ -17,8 +17,12 @@ from train_lstm import MultiTaskLSTM
 # --- CẤU HÌNH ĐƯỜNG DẪN (RELATIVE PATHS) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LSTM_WEIGHTS_PATH = os.path.join(BASE_DIR, "models", "best_multitask_lstm.pth")
-YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "runs", "detect", "runs", "train", "yolo_distraction-2", "weights", "best.pt")
+# Mặc định dùng yolov8n.pt (pretrained COCO) để nhận diện được bottle (chai nước) và cell phone (điện thoại)
+YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
+# Nếu muốn dùng mô hình custom chuyên dụng đã huấn luyện (có các lớp: Open Eye, Closed Eye, Cigarette, Phone, Seatbelt), hãy bỏ comment dòng dưới đây:
+# YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "runs", "detect", "runs", "train", "yolo_distraction-2", "weights", "best.pt")
 DB_PATH = os.path.join(os.path.dirname(BASE_DIR), "driver_safety.db")
+DB_BACKUP_DIR = os.path.join(os.path.dirname(DB_PATH), "driver_safety_backups")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- KHỞI TẠO MEDIAPIPE FACE MESH ---
@@ -46,6 +50,33 @@ def init_db(db_path: str):
     """)
     conn.commit()
     conn.close()
+
+
+def backup_db(db_path: str, backup_dir: str):
+    """Sao lưu database cũ vào thư mục backup với timestamp."""
+    if not os.path.exists(db_path):
+        return
+
+    os.makedirs(backup_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = os.path.join(backup_dir, f"driver_safety_{timestamp}.db")
+    try:
+        with sqlite3.connect(db_path) as src_conn, sqlite3.connect(backup_path) as dst_conn:
+            src_conn.backup(dst_conn)
+        print(f"✅ Đã sao lưu database cũ sang: {backup_path}")
+    except Exception as e:
+        print(f"[DB] Lỗi backup: {e}")
+
+
+def reset_db(db_path: str):
+    """Xóa database hiện tại để bắt đầu lại từ một DB trống."""
+    if os.path.exists(db_path):
+        try:
+            os.remove(db_path)
+            print(f"✅ Đã xóa database cũ: {db_path}")
+        except Exception as e:
+            print(f"[DB] Lỗi xóa database: {e}")
+
 
 def log_event(db_path: str, event_type: str, severity: str, detail: str = ""):
     """Ghi một sự kiện vi phạm vào database (chạy trên thread riêng để không block camera)."""
@@ -108,9 +139,12 @@ def main_realtime_system():
         print(f"   YOLO: {YOLO_WEIGHTS_PATH}")
         return
 
-    # Khởi tạo database
+    # Backup và reset database mỗi lần khởi động
+    backup_db(DB_PATH, DB_BACKUP_DIR)
+    reset_db(DB_PATH)
     init_db(DB_PATH)
-    print(f"✅ Database sẵn sàng tại: {DB_PATH}")
+    print(f"✅ Database hiện tại đã được reset và khởi tạo lại: {DB_PATH}")
+    print(f"✅ Backup cũ lưu tại: {DB_BACKUP_DIR}")
 
     # Nạp mô hình
     lstm_model = MultiTaskLSTM().to(DEVICE)
@@ -149,6 +183,10 @@ def main_realtime_system():
     LOG_COOLDOWN  = 5.0   # giây
 
     cap = cv2.VideoCapture(0)
+    window_name = "Driver Monitoring System HUD v2"
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     print("\n🚀 HỆ THỐNG GIÁM SÁT TÀI XẾ V2 ĐÃ SẴN SÀNG!")
     print("   Nhấn 'q' để thoát.\n")
 
@@ -174,13 +212,21 @@ def main_realtime_system():
             conf   = float(box.conf[0])
             label  = yolo_model.names[cls_id]
 
-            if conf > 0.45 and label in ['phone', 'drink']:
+            # Kiểm tra nếu nhãn thuộc nhóm thiết bị (phone/cell phone) hoặc đồ uống (drink/bottle)
+            if conf > 0.45 and label in ['phone', 'drink', 'bottle', 'cell phone']:
                 yolo_detected = True
-                yolo_label    = label.upper()
+                
+                # Chuẩn hóa nhãn hiển thị sang PHONE hoặc BOTTLE
+                if label in ['drink', 'bottle']:
+                    display_label = 'BOTTLE'
+                else:
+                    display_label = 'PHONE'
+                
+                yolo_label    = display_label
 
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 165, 255), 2)
-                cv2.putText(display_frame, f"{label.upper()} {conf:.2f}", (x1, y1 - 10),
+                cv2.putText(display_frame, f"{display_label} {conf:.2f}", (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 2)
 
         # =============================================================

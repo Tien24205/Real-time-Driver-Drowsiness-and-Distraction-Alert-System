@@ -34,7 +34,7 @@ def generate_minimal_structure():
     dot.node('yolo', 'YOLOv8 Nano\n(Spatial Detector)', fillcolor='#E8F5E9', color='#4CAF50', penwidth='1.8')
 
     # Tầng 3: Temporal Process Layers
-    dot.node('lstm', 'Multi-Task LSTM\n(Temporal Sequence Network)', fillcolor='#E8F5E9', color='#4CAF50', penwidth='1.8')
+    dot.node('lstm', 'LSTM Classifier\n(Temporal Sequence Network)', fillcolor='#E8F5E9', color='#4CAF50', penwidth='1.8')
     
     # Tầng 4: Optimization Filters
     dot.node('calib', 'Dynamic Calibration\n(Alpha = 0.78)', fillcolor='#F3E5F5', color='#9C27B0')
