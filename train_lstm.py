@@ -4,8 +4,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
 
+from paths import X_PATH, Y_PATH, LSTM_WEIGHTS, SEED
+
 # --- CẤU HÌNH HỆ THỐNG ---
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.manual_seed(SEED)
 BATCH_SIZE = 64
 EPOCHS = 30
 LEARNING_RATE = 0.001
@@ -62,9 +65,8 @@ class MultiTaskLSTM(nn.Module):
 
 # 3. TIẾN TRÌNH HUÂN LUYỆN CHÍNH
 def train_model():
-    x_data_path = "data/processed/X_drowsy_seq.npy"
-    y_data_path = "data/processed/y_drowsy_labels.npy"
-    
+    x_data_path, y_data_path = X_PATH, Y_PATH
+
     if not (os.path.exists(x_data_path) and os.path.exists(y_data_path)):
         print("Lỗi: Không tìm thấy file dữ liệu nén. Vui lòng chạy lại drowsiness_data_compiler.py!")
         return
@@ -73,7 +75,11 @@ def train_model():
     full_dataset = DriverSequenceDataset(x_data_path, y_data_path)
     train_size = int(0.8 * len(full_dataset))
     val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    # Seed co dinh -> evaluate.py tai lap dung tap val nay
+    train_dataset, val_dataset = random_split(
+        full_dataset, [train_size, val_size],
+        generator=torch.Generator().manual_seed(SEED)
+    )
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -144,8 +150,8 @@ def train_model():
         # Cơ chế Checkpoint: Chỉ lưu lại mô hình nếu đạt chỉ số Loss thấp nhất trên tập Validation
         if epoch_val_loss < best_val_loss:
             best_val_loss = epoch_val_loss
-            os.makedirs("models", exist_ok=True)
-            torch.save(model.state_dict(), "models/best_multitask_lstm.pth")
+            os.makedirs(os.path.dirname(LSTM_WEIGHTS), exist_ok=True)
+            torch.save(model.state_dict(), LSTM_WEIGHTS)
             print("  --> Đã lưu trọng số xuất sắc nhất (Best Checkpoint)!")
 
     print("\n🎉 HUÂN LUYỆN HOÀN TẤT! File trọng số đã lưu thành công tại: models/best_multitask_lstm.pth")

@@ -1,9 +1,11 @@
 import os
 from ultralytics import YOLO
 
+from paths import DISTRACT_DIR
+
+
 def train_distraction_yolo():
-    # 1. Đường dẫn tới file cấu hình yaml em vừa sửa ở Bước 1
-    yaml_path = "E:/Project2026/Dataset/Distract/data.yaml"
+    yaml_path = os.path.join(DISTRACT_DIR, "data.yaml")
     
     if not os.path.exists(yaml_path):
         print(f"Lỗi: Không tìm thấy file data.yaml tại {yaml_path}")

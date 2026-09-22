@@ -1,9 +1,8 @@
 import os
-import re
 
-# --- ĐƯỜNG DẪN THỰC TẾ TRÊN MÁY CỦA EM ---
-DROWSINESS_ROOT = "E:\\Project2026\\Dataset\\Drownsiness"
-DISTRACT_ROOT = "E:\\Project2026\\Dataset\\Distract"
+from paths import DROWSINESS_DIR as DROWSINESS_ROOT
+from paths import DISTRACT_DIR as DISTRACT_ROOT
+
 
 def analyze_drowsiness_module():
     print("==================================================================")

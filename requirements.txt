@@ -1,0 +1,20 @@
+# Core runtime (main_app.py, dashboard.py)
+opencv-python
+mediapipe==0.10.11
+numpy
+scipy
+torch
+ultralytics
+streamlit
+pandas
+plotly
+
+# Training & evaluation (train_lstm.py, evaluate.py)
+scikit-learn
+
+# Figures & benchmark (Runtime_table.py, Yolo_confusion_matrix.py, Architecture_diagram.py)
+matplotlib
+seaborn
+psutil
+gputil
+graphviz

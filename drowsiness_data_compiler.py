@@ -2,8 +2,9 @@ import os
 import cv2
 import numpy as np
 import mediapipe as mp
-# Import các hàm trích xuất từ file Tuần 1 của em
+
 from head_pose_extractor import calculate_ear, calculate_mar, get_head_pose
+from paths import DROWSINESS_DIR, X_PATH, Y_PATH
 
 # Khởi tạo MediaPipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
@@ -108,18 +109,16 @@ def process_drowsiness_dataset(base_path, seq_len=30):
     return np.array(X_data, dtype=np.float32), np.array(y_data, dtype=np.int64)
 
 if __name__ == "__main__":
-    # ĐƯỜNG DẪN THỰC TẾ TRÊN MÁY TÍNH CỦA EM
-    # Hãy thay thế đường dẫn này trỏ thẳng vào folder "Drowsiness" mẹ
-    DROWSINESS_ROOT = "E:\Project2026\Dataset\Drownsiness"
+    DROWSINESS_ROOT = DROWSINESS_DIR
 
     if os.path.exists(DROWSINESS_ROOT):
         X, y = process_drowsiness_dataset(DROWSINESS_ROOT, seq_len=30)
         
         if len(X) > 0:
             # Lưu trữ dữ liệu số đã xử lý sạch sẽ vào thư mục data/processed
-            os.makedirs("data/processed", exist_ok=True)
-            np.save("data/processed/X_drowsy_seq.npy", X)
-            np.save("data/processed/y_drowsy_labels.npy", y)
+            os.makedirs(os.path.dirname(X_PATH), exist_ok=True)
+            np.save(X_PATH, X)
+            np.save(Y_PATH, y)
             
             print("\n=======================================================")
             print("🎉 HOÀN THÀNH ĐÓNG GÓI MODULE DỮ LIỆU BUỒN NGỦ!")

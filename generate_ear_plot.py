@@ -1,6 +1,15 @@
+"""Hinh MINH HOA khai niem: hieu chuan dong + debounce tren tin hieu EAR.
+
+CANH BAO: du lieu EAR o day la MO PHONG (np.random), khong phai do tu nguoi that.
+Chi dung lam hinh minh hoa nguyen ly trong luan van, KHONG duoc trinh bay
+nhu ket qua thuc nghiem.
+"""
+import os
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
 # Set seed for reproducibility
 np.random.seed(42)
@@ -77,6 +86,6 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.tight_layout()
 
 # Save the figure
-out_path = r'E:\Project2026\Real-time Driver Drowsiness and Distraction Alert System\ear_dynamic_threshold.png'
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ear_dynamic_threshold.png')
 plt.savefig(out_path, dpi=300)
 print(f"Chart saved successfully to: {out_path}")

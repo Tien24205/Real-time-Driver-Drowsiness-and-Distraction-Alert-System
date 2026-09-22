@@ -1,37 +1,41 @@
+"""Đo hiệu năng thời gian thực (FPS / latency / CPU / GPU) của 4 cấu hình pipeline.
+
+Xuất bảng số liệu + biểu đồ runtime_performance.png vẽ từ CHÍNH số vừa đo.
+
+Chạy:
+    python Runtime_table.py                     # dùng webcam
+    set VIDEO_TEST=D:\\clip.mp4 & python Runtime_table.py
+"""
 import os
 import sys
-import cv2
 import time
+import collections
+
+import cv2
 import torch
 import psutil
-import collections  # <-- Thêm import trực tiếp ở đây để sửa triệt để lỗi UnboundLocalError
 
-# Thử nghiệm import thư viện đo GPU nếu có card NVIDIA (Cài đặt: pip install gputil)
 try:
     import GPUtil
     HAS_GPUTIL = True
 except ImportError:
     HAS_GPUTIL = False
 
-# Import các thành phần cấu trúc từ file nguồn của bạn
 try:
     import mediapipe as mp
     from ultralytics import YOLO
     from train_lstm import MultiTaskLSTM
-    from head_pose_extractor import calculate_ear, calculate_mar
 except ImportError as e:
-    print(f"❌ Lỗi: Thiếu thư viện hoặc file code phụ thuộc: {e}")
-    sys.exit(1)
+    sys.exit(f"Thiếu thư viện hoặc file phụ thuộc: {e}")
 
-# --- THIẾT LẬP ĐƯỜNG DẪN ĐỒNG BỘ VỚI MAIN_APP.PY ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LSTM_WEIGHTS_PATH = os.path.join(BASE_DIR, "models", "best_multitask_lstm.pth")
-YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "runs", "detect", "runs", "train", "yolo_distraction-2", "weights", "best.pt")
+from paths import LSTM_WEIGHTS, YOLO_CUSTOM, YOLO_WEIGHTS
 
-# ĐƯỜNG DẪN VIDEO TEST TRÊN MÁY BẠN
-VIDEO_TEST_PATH = r"E:\Project2026\Dataset\Drownsiness\DDD\undrownsy\video_test.mp4" 
-if not os.path.exists(VIDEO_TEST_PATH):
-    # Nếu không tìm thấy đường dẫn video, tự động chuyển sang Webcam (0) để test
+LSTM_WEIGHTS_PATH = LSTM_WEIGHTS
+YOLO_WEIGHTS_PATH = YOLO_CUSTOM
+
+# Video test lấy từ biến môi trường VIDEO_TEST; không có thì dùng webcam
+VIDEO_TEST_PATH = os.environ.get("VIDEO_TEST", "")
+if not VIDEO_TEST_PATH or not os.path.exists(VIDEO_TEST_PATH):
     VIDEO_TEST_PATH = 0
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,7 +71,7 @@ def benchmark_configuration(mode_name):
         if os.path.exists(YOLO_WEIGHTS_PATH):
             model_yolo = YOLO(YOLO_WEIGHTS_PATH).to(DEVICE)
         else:
-            model_yolo = YOLO("yolov8n.pt").to(DEVICE)
+            model_yolo = YOLO(YOLO_WEIGHTS).to(DEVICE)
 
     cap = cv2.VideoCapture(VIDEO_TEST_PATH)
     frame_count = 0
@@ -140,6 +144,49 @@ def benchmark_configuration(mode_name):
     
     return fps, avg_latency, avg_cpu, avg_gpu
 
+def plot_results(results, out_path="runtime_performance.png"):
+    """Vẽ biểu đồ Sequential vs Parallel TỪ SỐ LIỆU VỪA ĐO (không hardcode)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    seq, par = results["Sequential full pipeline"], results["Parallel full pipeline"]
+    labels = ["FPS\n(cao hơn = tốt)", "Latency (ms)\n(thấp hơn = tốt)",
+              "CPU (%)\n(thấp hơn = tốt)", "GPU (%)\n(thấp hơn = tốt)"]
+    keys = ["fps", "latency", "cpu", "gpu"]
+
+    x, width = np.arange(len(labels)), 0.35
+    fig, ax = plt.subplots(figsize=(10, 6))
+    groups = [
+        ax.bar(x - width / 2, [seq[k] for k in keys], width,
+               label="Sequential Pipeline", color="#e74c3c"),
+        ax.bar(x + width / 2, [par[k] for k in keys], width,
+               label="Parallel Pipeline (Proposed)", color="#2980b9"),
+    ]
+
+    ax.set_ylabel("Scores / Percentages", fontsize=12, fontweight="bold")
+    ax.set_title("Real-Time Computation and Hardware Resource Profiling",
+                 fontsize=14, fontweight="bold", pad=15)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=11)
+    ax.legend(fontsize=11)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    for group in groups:
+        for rect in group:
+            ax.annotate(f"{rect.get_height():.1f}",
+                        xy=(rect.get_x() + rect.get_width() / 2, rect.get_height()),
+                        xytext=(0, 3), textcoords="offset points",
+                        ha="center", va="bottom", fontsize=10, fontweight="bold")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"✅ Đã lưu biểu đồ (vẽ từ số liệu vừa đo): {out_path}")
+
+
 if __name__ == "__main__":
     print("====================================================================")
     print("🚗 KHỞI CHẠY KIỂM ĐỊNH HIỆU NĂNG THỜI GIAN THỰC (TABLE 1 RUNTIME)")
@@ -157,10 +204,12 @@ if __name__ == "__main__":
         fps, latency, cpu, gpu = benchmark_configuration(mode)
         results[mode] = {"fps": fps, "latency": latency, "cpu": cpu, "gpu": gpu}
         
-    print("\n📊 ==================== BẢNG SỐ LIỆU RUNTIME THẬT ====================")
+    print("\n📊 ============== BẢNG SỐ LIỆU RUNTIME ĐO THỰC TẾ ==============")
     print(f"{'Configuration Model':<26} | {'FPS':<6} | {'Latency (ms)':<12} | {'CPU (%)':<8} | {'GPU (%)'}")
     print("-" * 72)
     for mode in modes:
         res = results[mode]
         print(f"{mode:<26} | {res['fps']:5.1f} | {res['latency']:10.2f} ms | {res['cpu']:6.1f}% | {res['gpu']:5.1f}%")
-    print("=======================================================================")
+    print("=" * 72)
+
+    plot_results(results)

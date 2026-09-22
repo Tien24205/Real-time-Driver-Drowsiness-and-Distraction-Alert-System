@@ -4,9 +4,8 @@ import seaborn as sns
 import numpy as np
 from ultralytics import YOLO
 
-# 1. Cấu hình các đường dẫn thực tế trên máy tính của bạn
-MODEL_PATH = r"E:\Project2026\Real-time Driver Drowsiness and Distraction Alert System\runs\detect\runs\train\yolo_distraction-2\weights\best.pt"
-DATA_YAML_PATH = r"E:\Project2026\Real-time Driver Drowsiness and Distraction Alert System\data.yaml"
+from paths import YOLO_CUSTOM as MODEL_PATH, DATA_YAML as DATA_YAML_PATH
+
 
 def generate_real_yolo_confusion_matrix():
     # Kiểm tra sự tồn tại của file weights và file cấu hình yaml

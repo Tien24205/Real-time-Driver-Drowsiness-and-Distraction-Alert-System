@@ -1,95 +1,31 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pyc
 
-# Virtual Environment
+# Virtual environment
 env_cv/
+.venv/
 venv/
-ENV/
-env/
-.venv
 
-# IDEs
+# IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-.project
-.pydevproject
-.settings/
-*.sublime-project
-*.sublime-workspace
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# Machine Learning Models
-*.pth
+# Models & data (tai/sinh lai bang train_lstm.py, train_yolo.py)
 *.pt
-*.h5
-*.model
-*.pkl
-*.pickle
-
-# Data files
+*.pth
 data/
-*.npy
-*.npz
-*.csv
-*.xlsx
-
-# YOLO runs and outputs
 runs/
-*.yaml
-!data.yaml
-!README.md
+*.npy
 
-# Temporary files
-*.tmp
-*.temp
-tempCodeRunnerFile.py
-.cache/
-*.log
-
-# OS files
-Thumbs.db
-.DS_Store
-*.swp
-*.swo
-
-# Environment variables
-.env
-.env.local
+# Runtime artifacts
+*.db
+driver_safety_backups/
+evaluation_report.txt
 
 # Misc
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-dist/
-build/
+tempCodeRunnerFile.py
+*.log
+Thumbs.db
+.DS_Store

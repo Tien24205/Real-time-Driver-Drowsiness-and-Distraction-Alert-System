@@ -14,15 +14,13 @@ from ultralytics import YOLO
 from head_pose_extractor import calculate_ear, calculate_mar, get_head_pose
 from train_lstm import MultiTaskLSTM
 
-# --- CẤU HÌNH ĐƯỜNG DẪN (RELATIVE PATHS) ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LSTM_WEIGHTS_PATH = os.path.join(BASE_DIR, "models", "best_multitask_lstm.pth")
-# Mặc định dùng yolov8n.pt (pretrained COCO) để nhận diện được bottle (chai nước) và cell phone (điện thoại)
-YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
-# Nếu muốn dùng mô hình custom chuyên dụng đã huấn luyện (có các lớp: Open Eye, Closed Eye, Cigarette, Phone, Seatbelt), hãy bỏ comment dòng dưới đây:
-# YOLO_WEIGHTS_PATH = os.path.join(BASE_DIR, "runs", "detect", "runs", "train", "yolo_distraction-2", "weights", "best.pt")
-DB_PATH = os.path.join(os.path.dirname(BASE_DIR), "driver_safety.db")
-DB_BACKUP_DIR = os.path.join(os.path.dirname(DB_PATH), "driver_safety_backups")
+# --- CẤU HÌNH ĐƯỜNG DẪN (xem paths.py) ---
+# Mặc định dùng yolov8n.pt (pretrained COCO) để nhận diện bottle (chai nước) và cell phone.
+# Đổi sang YOLO_CUSTOM nếu muốn dùng mô hình custom đã huấn luyện trong runs/.
+from paths import LSTM_WEIGHTS as LSTM_WEIGHTS_PATH
+from paths import YOLO_WEIGHTS as YOLO_WEIGHTS_PATH
+from paths import DB_PATH, DB_BACKUP_DIR
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # --- KHỞI TẠO MEDIAPIPE FACE MESH ---

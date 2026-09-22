@@ -1,16 +1,12 @@
+"""Trich xuat dac trung hinh hoc tu landmark MediaPipe Face Mesh: EAR, MAR, head pose.
+
+Module thuan ham - khong khoi tao FaceMesh o day. Ben goi (main_app.py,
+drowsiness_data_compiler.py) tu tao instance cua rieng no.
+"""
 import cv2
-import mediapipe as mp
 import numpy as np
 import math
 
-# Khởi tạo MediaPipe Face Mesh với cấu hình tối ưu chi tiết (Refine Landmarks)
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    max_num_faces=1, 
-    refine_landmarks=True, 
-    min_detection_confidence=0.5, 
-    min_tracking_confidence=0.5
-)
 
 def calculate_ear(landmarks, eye_indices, face_width_reference=None):
     """
@@ -106,57 +102,3 @@ def get_head_pose(frame, landmarks):
         z = 0
 
     return math.degrees(x), math.degrees(y), math.degrees(z), translation_vector
-
-
-# --- CHƯƠNG TRÌNH CHÍNH ĐỂ KIỂM THỬ TÍCH HỢP ---
-if __name__ == "__main__":
-    # Chỉ số các điểm mốc chuẩn của MediaPipe Face Mesh Refined
-    LEFT_EYE = [33, 160, 158, 133, 153, 144]
-    RIGHT_EYE = [263, 387, 385, 362, 380, 373]
-    MOUTH = [78, 81, 13, 308, 14, 312] # Viền môi trong
-
-    cap = cv2.VideoCapture(0)
-    print("Đang khởi động Camera tích hợp 5 chỉ số... Nhấn 'q' để thoát.")
-
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success: break
-
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = face_mesh.process(rgb_frame)
-
-        if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                # 1. Tính toán EAR (Trung bình cộng 2 mắt)
-                left_ear = calculate_ear(face_landmarks, LEFT_EYE)
-                right_ear = calculate_ear(face_landmarks, RIGHT_EYE)
-                avg_ear = (left_ear + right_ear) / 2.0
-                
-                # 2. Tính toán MAR
-                mar = calculate_mar(face_landmarks, MOUTH)
-                
-                # 3. Tính toán Head Pose
-                pitch, yaw, roll, nose_2d = get_head_pose(frame, face_landmarks)
-
-                # --- ĐÂY CHÍNH LÀ VECTOR ĐẶC TRƯNG MÀ MÔ HÌNH SẼ HỌC ---
-                feature_vector = [avg_ear, mar, pitch, yaw, roll]
-                print(f"Feature Vector: [EAR: {avg_ear:.3f}, MAR: {mar:.3f}, P: {pitch:.1f}, Y: {yaw:.1f}, R: {roll:.1f}]")
-
-                # Vẽ các chỉ số hiển thị trực quan lên màn hình UI màn hình máy tính
-                cv2.putText(frame, f"EAR (Eye): {avg_ear:.3f}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-                cv2.putText(frame, f"MAR (Mouth): {mar:.3f}", (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-                cv2.putText(frame, f"Pitch (Cui/Ngua): {int(pitch)}", (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                cv2.putText(frame, f"Yaw (Trai/Phai): {int(yaw)}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                cv2.putText(frame, f"Roll (Nghieng): {int(roll)}", (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-                # Vẽ cảnh báo nhanh dựa trên ngưỡng cứng (Chỉ để Test thuật toán)
-                if avg_ear < 0.20:
-                    cv2.putText(frame, "EYES CLOSED!", (350, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                if mar > 0.50:
-                    cv2.putText(frame, "YAWNING!", (350, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-
-        cv2.imshow("Driver Feature Extractor - Week 1", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'): break
-
-    cap.release()
-    cv2.destroyAllWindows()

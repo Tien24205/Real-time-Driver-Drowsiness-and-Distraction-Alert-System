@@ -1,10 +1,11 @@
+import os
+import sqlite3
+
 import streamlit as st
 import pandas as pd
-import sqlite3
 import plotly.express as px
-import plotly.graph_objects as go
-import os
-import datetime
+
+from paths import DB_PATH, DB_BACKUP_DIR
 
 st.set_page_config(
     page_title="Hệ thống Giám sát Tài xế v2",
@@ -26,46 +27,47 @@ st.markdown("""
 st.title("📊 Bảng điều khiển Trợ lý An toàn Tài xế")
 st.caption("Cập nhật theo thời gian thực từ hệ thống camera giám sát.")
 
-# ─── TÌM DATABASE ───────────────────────────────────────────────────────
-DB_DIR = os.path.dirname(__file__)
-DB_CANDIDATES = [
-    os.path.join(DB_DIR, "driver_safety.db"),
-    r"E:\Project2026\driver_safety.db",
-]
-DEFAULT_DB_PATH = os.path.join(DB_DIR, "driver_safety.db")
-DB_PATH = next((p for p in DB_CANDIDATES if os.path.exists(p)), DEFAULT_DB_PATH)
-DB_BACKUP_DIR = os.path.join(DB_DIR, "driver_safety_backups")
-
 # ─── HỖ TRỢ DATABASE ──────────────────────────────────────────────────
-
-def list_backup_files(backup_dir: str):
-    if not os.path.isdir(backup_dir):
-        return []
-    return sorted([
-        f for f in os.listdir(backup_dir) if f.lower().endswith(".db")
-    ], reverse=True)
-
 
 @st.cache_data(ttl=10)   # Tự refresh mỗi 10 giây
 def get_data(db_path):
     try:
-        conn = sqlite3.connect(db_path)
-        df = pd.read_sql_query("SELECT * FROM safety_events ORDER BY timestamp DESC", conn)
-        conn.close()
-        return df
+        with sqlite3.connect(db_path) as conn:
+            return pd.read_sql_query(
+                "SELECT * FROM safety_events ORDER BY timestamp DESC", conn)
     except Exception:
         return pd.DataFrame()
 
-if not os.path.exists(DB_PATH):
-    st.warning("⚠️ Chưa có file `driver_safety.db` để đọc. Hãy chạy `main_app.py` để tạo và ghi dữ liệu.")
+
+def show_backup_viewer():
+    with st.expander("🕰️ Xem database cũ từ backup"):
+        files = sorted(
+            (f for f in os.listdir(DB_BACKUP_DIR) if f.lower().endswith(".db")),
+            reverse=True,
+        ) if os.path.isdir(DB_BACKUP_DIR) else []
+
+        if not files:
+            st.info("Không tìm thấy file backup nào trong `driver_safety_backups`.")
+            return
+
+        selected = st.selectbox("Chọn file backup", files)
+        old_df = get_data(os.path.join(DB_BACKUP_DIR, selected))
+        if old_df.empty:
+            st.error(f"Không đọc được hoặc file rỗng: {selected}")
+            return
+        old_df["timestamp"] = pd.to_datetime(old_df["timestamp"])
+        st.write(f"### 📦 Nội dung backup: `{selected}`")
+        st.dataframe(old_df.head(100), use_container_width=True)
 
 
 df = get_data(DB_PATH)
 
+# Chưa có dữ liệu -> chỉ hiện phần xem backup rồi dừng, tránh KeyError bên dưới
 if df.empty:
     st.warning("⚠️ Chưa có dữ liệu vi phạm trong database hiện tại.")
     st.info("📌 Hãy chạy `main_app.py` để ghi dữ liệu mới và làm mới dashboard.")
-
+    show_backup_viewer()
+    st.stop()
 
 df["timestamp"] = pd.to_datetime(df["timestamp"])
 
@@ -152,19 +154,4 @@ st.divider()
 st.caption(f"📁 Database: `{DB_PATH}` — Tổng {total_events} bản ghi")
 
 # ─── XEM DATABASE CŨ ─────────────────────────────────────────────────────
-with st.expander("🕰️ Xem database cũ từ backup"):
-    backup_files = list_backup_files(DB_BACKUP_DIR)
-    if not backup_files:
-        st.info("Không tìm thấy file backup nào trong thư mục `driver_safety_backups`.")
-    else:
-        selected_backup = st.selectbox("Chọn file backup", backup_files)
-        if selected_backup:
-            backup_path = os.path.join(DB_BACKUP_DIR, selected_backup)
-            try:
-                with sqlite3.connect(backup_path) as conn:
-                    old_df = pd.read_sql_query("SELECT * FROM safety_events ORDER BY timestamp DESC", conn)
-                old_df["timestamp"] = pd.to_datetime(old_df["timestamp"])
-                st.write(f"### 📦 Nội dung file backup: `{selected_backup}`")
-                st.dataframe(old_df.head(100), use_container_width=True)
-            except Exception as e:
-                st.error(f"Không thể đọc file backup: {e}")
+show_backup_viewer()
